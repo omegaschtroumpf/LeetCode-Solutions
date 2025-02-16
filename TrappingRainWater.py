@@ -1,72 +1,99 @@
-class TrappingRainWater:
+def container_volume(height, left_index, right_index):
+    """
+    Calculate the amount of water held between the indices in height.
+
+    :param height: integer height values
+    :type height: list
+    :param left_index: container starting point
+    :type left_index: int
+    :param right_index: container end point
+    :type right_index: int
+    :rtype: int
+    """
     
-    # ContainerVolume calculates the amount of water trapped in a defined "container" in the
-    # height list between leftIndex and rightIndex.
-    # This method assumes that no height between the indices is taller than the heights
-    # at the indices.
-    def containerVolume(height, leftIndex, rightIndex):
-        # I should raise exceptions if the leftIndex or rightIndex are out of range of 0 to len(height)
-        # TO DO
-        
-        containerHeight = min(height[leftIndex],height[rightIndex])
-        volume = 0
-        for i in range(leftIndex + 1, rightIndex):
-            volume += containerHeight - height[i]
-        return volume
-    #end ContainerVolume
+    container_height = min(height[left_index],height[right_index])
+    volume = 0
+    for i in range(left_index + 1, right_index):
+        if height[i] > container_height:
+            raise 
+        volume += container_height - height[i]
+    return volume
+# end container_volume
 
+def trap1(height):
     # This solution is probably O(n**2) due to sorting the values
-    # The heights are sorted with original indices
-    # Then the heights are popped from the sorted list and the bucket sizes are calculated until the
-    # entire range of heights has been processed
-    def trap1(height):
-        if (len(height) == 0):
-            return 0
-        # if we get here, there is at least one height in the list
-        result = 0
-        # order the max heights in descending order with their indexes in height
-        maxes = [(height[x], x) for x in range(len(height))]
-        maxes.sort() # number 1 done
-        leftBound = rightBound = maxes.pop()
-        while (len(maxes) > 0):
-            temp = maxes.pop()
-            # calculate the volume held between the current bounds and the next max height
-            if (temp[1] < leftBound[1]):
-                result += TrappingRainWater.containerVolume(height, temp[1], leftBound[1])
-                leftBound = temp
-            elif (temp[1] > rightBound[1]):
-                result += TrappingRainWater.containerVolume(height, rightBound[1], temp[1])
-                rightBound = temp
-            # it's possible that the index is already within bounds. if so, we can throw it away
-            # if our bounds encompass the entire list, we can exit
-            if (leftBound[1] == 0 and rightBound[1] == (len(height) - 1)):
-                break
-        return result
-    # end trap1
+    """
+    Calculate the amount of water held by the entire topographic height list.
 
-    # trap2 is under construction as an O(n) algorithm
-    # the goal is to keep a running total as we go and avoid having to look back through the list
-    # trading off more data stored as we go vs. time
-    # I need to think more on method for this one
-    def trap2(height):
-        if (len(height) == 0):
-            return 0
-        # if we get here, there is at least one height in the list
-        result = 0
-        # keep track of heights so we can backtrack
-        currentMax = 0
-        lookBackIndex = 0
-        lookBackTotal = 0
-        for i in range(0, len(height)):
-            # at the start, if height[i] > currentMax, simply update currentMax
-            if height[i] > currentMax:
-                currentMax = height[i]
-    # end trap2
-#end TrappingRainWater
+    :param height: integer height values
+    :type height: list
+    :rtype: int
+    """
+
+    if (len(height) == 0):
+        return 0
+    result = 0
+    # order the max heights with their indices
+    maxes = [(height[x], x) for x in range(len(height))]
+    maxes.sort()
+    # remove from the right end of list, i.e. the highest first
+    left_bound = right_bound = maxes.pop()
+    while (len(maxes) > 0):
+        temp = maxes.pop()
+        # calculate the volume held between the current bounds and the next max height
+        if (temp[1] < left_bound[1]):
+            result += container_volume(height, temp[1], left_bound[1])
+            left_bound = temp
+        elif (temp[1] > right_bound[1]):
+            result += container_volume(height, right_bound[1], temp[1])
+            right_bound = temp
+        # There is no else: we discard any max/index within calculated bounds.
+        if (left_bound[1] == 0 and right_bound[1] == (len(height) - 1)):
+            break # When calculated bounds include the entire list, we are done.
+    return result
+# end trap1
+
+def trap2(height):
+    # This solution will be O(n), traversing the array only twice
+    # We need to know the highest height to the left of each index and the highest to the right
+    """
+    Calculate the amount of water held by the entire topographic height list.
+
+    :param height: integer height values
+    :type height: list
+    :rtype: int
+    """
+    if (len(height) == 0):
+        return 0
+    # If we get here, there is at least one height in the list.
+    result = 0
+    # We will keep track of the highest height to the left so we can calculate on the return pass.
+    left_max = []
+    # The first pass is from left to right.
+    current_max = 0
+    for i in range(0, len(height)):
+        # Update current_max, if needed, and store left_max for this index.
+        if height[i] > current_max:
+            current_max = height[i]
+        left_max.append(current_max)
+    # The second pass is right to left
+    current_max = 0
+    water_level = 0 # This variable will be updated for each index to be the max of left_max and current_max
+    for i in range(len(height) -1, -1, -1):
+        # Update current_max, if needed.
+        if height[i] > current_max:
+            current_max = height[i]
+        # Add the amount of rain trapped at this height to result
+        result += min(left_max[i], current_max) - height[i]
+    return result
+# end trap2
 
 # testing based on use cases from the problem description on LeetCode
-height = [0,1,0,2,1,0,1,3,2,1,2,1]
-print(TrappingRainWater.trap1(height))
-height = [4,2,0,3,2,5]
-print(TrappingRainWater.trap1(height))
-
+heights = []
+heights.append([0,1,0,2,1,0,1,3,2,1,2,1])
+heights.append([4,2,0,3,2,5])
+heights.append([1,2,3,14,4,5,3,2,1,10,4,5,6,7,9,3,2,1])
+for height in heights:
+    print(height)
+    print("Trap1: " + str(trap1(height)))
+    print("Trap2: " + str(trap2(height)))
